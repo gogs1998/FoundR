@@ -2,7 +2,7 @@
 export default {
   ignoredRouteFiles: ["**/.*"],
   serverModuleFormat: "esm",
-  serverPlatform: "neutral",
+  serverPlatform: "cloudflare",
   tailwind: true,
   postcss: true,
   future: {
