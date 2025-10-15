@@ -15,23 +15,25 @@ interface Message {
 }
 
 export async function action({ request, context }: ActionFunctionArgs) {
-  const formData = await request.formData();
-  const action = formData.get('action') as string;
-  const message = formData.get('message') as string;
-  const conversationJson = formData.get('conversation') as string | null;
-
-  const env = context.env as any;
-
-  // Get OpenRouter API key from environment
-  const OPENROUTER_API_KEY = env.OPENROUTER_API_KEY || '';
-
-  if (!OPENROUTER_API_KEY) {
-    return json({
-      error: 'OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable.'
-    }, { status: 500 });
-  }
-
   try {
+    const formData = await request.formData();
+    const action = formData.get('action') as string;
+    const message = formData.get('message') as string;
+    const conversationJson = formData.get('conversation') as string | null;
+
+    // @ts-ignore - context.env is provided by Cloudflare
+    const env = context?.env || {};
+
+    // Get OpenRouter API key from environment
+    const OPENROUTER_API_KEY = env.OPENROUTER_API_KEY || '';
+
+    if (!OPENROUTER_API_KEY) {
+      console.error('Missing OPENROUTER_API_KEY. Context:', { hasContext: !!context, hasEnv: !!context?.env });
+      return json({
+        error: 'OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable in Cloudflare Pages dashboard.'
+      }, { status: 500 });
+    }
+
     if (action === 'start') {
       // Start new conversation
       const agent = new QuestionAgent(OPENROUTER_API_KEY);
