@@ -18,3 +18,8 @@ demo.html
 tasks.md
 tailwind.config.js
 wrangler.jsonc
+
+# Documentation with potentially sensitive info
+MANUAL_DEPLOYMENT.md
+VIBESDK_SETUP.md
+DEPLOYMENT_STATUS.md

@@ -26,9 +26,11 @@ Go to **Settings** → **Environment variables** and add:
 **Production & Preview environments:**
 
 ```
-OPENROUTER_API_KEY=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
+OPENROUTER_API_KEY=<your-openrouter-api-key>
 VIBESDK_URL=https://vibesdk-production1.gogs1998.workers.dev
 ```
+
+**Note**: Get your OpenRouter API key from https://openrouter.ai/keys
 
 ### 3. Trigger Deployment
 
