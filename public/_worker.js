@@ -1,5 +1,5 @@
 import { createRequestHandler } from "@remix-run/cloudflare";
-import * as build from "../build/index.js";
+import * as build from "./server/index.js";
 
 const requestHandler = createRequestHandler(build, "production");
 
