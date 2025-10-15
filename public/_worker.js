@@ -1,16 +1,34 @@
 import { createRequestHandler } from "@remix-run/cloudflare";
 import * as build from "./server/index.js";
 
-const requestHandler = createRequestHandler(build, "production");
+const handleRequest = createRequestHandler({
+  build,
+  mode: "production",
+  getLoadContext: (context) => ({
+    env: context.env,
+    cf: context.request.cf,
+  }),
+});
 
 export default {
   async fetch(request, env, ctx) {
     try {
-      const loadContext = { env, ctx };
-      return await requestHandler(request, loadContext);
+      // Check if this is a request for a static asset
+      const url = new URL(request.url);
+
+      // Let Cloudflare Pages handle static assets from /build/
+      if (url.pathname.startsWith("/build/")) {
+        return env.ASSETS.fetch(request);
+      }
+
+      // Handle all other requests with Remix
+      return await handleRequest(request, { env, ctx });
     } catch (error) {
-      console.error(error);
-      return new Response("Internal Server Error", { status: 500 });
+      console.error("Worker error:", error);
+      return new Response(`Internal Server Error: ${error.message}`, {
+        status: 500,
+        headers: { "Content-Type": "text/plain" }
+      });
     }
   },
 };
