@@ -6,3 +6,15 @@ build/
 *.log
 .DS_Store
 .wrangler/
+
+# Extra directories
+foundr/
+vibesdk/
+
+# Local config
+.claude/
+*.txt
+demo.html
+tasks.md
+tailwind.config.js
+wrangler.jsonc
