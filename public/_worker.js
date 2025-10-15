@@ -1,16 +1,6 @@
 import { createRequestHandler } from "@remix-run/cloudflare";
 import * as build from "./server/index.js";
 
-const handleRequest = createRequestHandler({
-  build,
-  mode: "production",
-  getLoadContext: ({ env, ctx, request }) => ({
-    env,
-    ctx,
-    cf: request.cf,
-  }),
-});
-
 export default {
   async fetch(request, env, ctx) {
     try {
@@ -22,11 +12,22 @@ export default {
         return env.ASSETS.fetch(request);
       }
 
+      // Create request handler with proper context
+      const handleRequest = createRequestHandler({
+        build,
+        mode: "production",
+        getLoadContext: () => ({
+          env,
+          ctx,
+          cf: request.cf,
+        }),
+      });
+
       // Handle all other requests with Remix
-      return await handleRequest(request, { env, ctx, request });
+      return await handleRequest(request);
     } catch (error) {
       console.error("Worker error:", error);
-      return new Response(`Internal Server Error: ${error.message}`, {
+      return new Response(`Internal Server Error: ${error.message}\n\nStack: ${error.stack}`, {
         status: 500,
         headers: { "Content-Type": "text/plain" }
       });

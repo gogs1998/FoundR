@@ -1,7 +1,6 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration, useRouteError, isRouteErrorResponse } from "@remix-run/react";
-import { getAuth } from "@clerk/remix/ssr.server";
 
 import "./tailwind.css";
 
@@ -9,21 +8,11 @@ export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
 ];
 
-export async function loader({ request, context }: LoaderFunctionArgs) {
-  // Safely handle Clerk auth - may not be configured
-  let userId = null;
-  try {
-    const auth = await getAuth(request);
-    userId = auth?.userId || null;
-  } catch (error) {
-    console.warn("Clerk authentication not configured:", error);
-  }
-
+export async function loader({ context }: LoaderFunctionArgs) {
   // @ts-ignore - context.env is provided by Cloudflare Pages
   const env = context?.env || {};
 
   return {
-    userId,
     ENV: {
       CLERK_PUBLISHABLE_KEY: env.CLERK_PUBLISHABLE_KEY || "",
       STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY || "",
