@@ -2,7 +2,6 @@
 export default {
   ignoredRouteFiles: ["**/.*"],
   serverModuleFormat: "esm",
-  serverPlatform: "cloudflare",
   tailwind: true,
   future: {
     v3_fetcherPersist: true,
