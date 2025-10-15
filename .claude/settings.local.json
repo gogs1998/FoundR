@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(cat:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run dev)",
+      "Bash(wrangler:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(npm ls:*)",
+      "Bash(git rm:*)",
+      "WebFetch(domain:remix.run)",
+      "WebFetch(domain:v2.remix.run)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(if [ -d \"public\" ])",
+      "Bash(then echo \"public directory exists\")",
+      "Bash(else echo \"public directory does not exist\")",
+      "Bash(fi)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

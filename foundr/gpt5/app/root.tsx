@@ -9,17 +9,15 @@ export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
 ];
 
-export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { userId } = await getAuth(request);
-
-  // @ts-ignore - context.env is provided by Cloudflare Pages
-  const env = context?.env || {};
+export async function loader(args: LoaderFunctionArgs) {
+  const { request } = args;
+  const { userId } = await getAuth(args);
 
   return {
     userId,
     ENV: {
-      CLERK_PUBLISHABLE_KEY: env.CLERK_PUBLISHABLE_KEY,
-      STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY,
+      CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
+      STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
     },
   };
 }
