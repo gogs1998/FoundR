@@ -10,7 +10,14 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const { userId } = await getAuth(request);
+  // Safely handle Clerk auth - may not be configured
+  let userId = null;
+  try {
+    const auth = await getAuth(request);
+    userId = auth?.userId || null;
+  } catch (error) {
+    console.warn("Clerk authentication not configured:", error);
+  }
 
   // @ts-ignore - context.env is provided by Cloudflare Pages
   const env = context?.env || {};
@@ -18,8 +25,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   return {
     userId,
     ENV: {
-      CLERK_PUBLISHABLE_KEY: env.CLERK_PUBLISHABLE_KEY,
-      STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY,
+      CLERK_PUBLISHABLE_KEY: env.CLERK_PUBLISHABLE_KEY || "",
+      STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY || "",
     },
   };
 }

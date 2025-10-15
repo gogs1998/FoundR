@@ -4,9 +4,10 @@ import * as build from "./server/index.js";
 const handleRequest = createRequestHandler({
   build,
   mode: "production",
-  getLoadContext: (context) => ({
-    env: context.env,
-    cf: context.request.cf,
+  getLoadContext: ({ env, ctx, request }) => ({
+    env,
+    ctx,
+    cf: request.cf,
   }),
 });
 
@@ -22,7 +23,7 @@ export default {
       }
 
       // Handle all other requests with Remix
-      return await handleRequest(request, { env, ctx });
+      return await handleRequest(request, { env, ctx, request });
     } catch (error) {
       console.error("Worker error:", error);
       return new Response(`Internal Server Error: ${error.message}`, {
