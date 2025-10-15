@@ -4,7 +4,6 @@ export default {
   serverModuleFormat: "esm",
   serverPlatform: "cloudflare",
   tailwind: true,
-  postcss: true,
   future: {
     v3_fetcherPersist: true,
     v3_relativeSplatPath: true,
