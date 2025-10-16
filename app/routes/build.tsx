@@ -24,13 +24,21 @@ export async function action({ request, context }: ActionFunctionArgs) {
     // @ts-ignore - context.env is provided by Cloudflare
     const env = context?.env || {};
 
+    // Debug: Log what we have
+    console.log('Context debug:', {
+      hasContext: !!context,
+      hasEnv: !!context?.env,
+      envKeys: context?.env ? Object.keys(context.env) : [],
+      hasApiKey: !!(context?.env as any)?.OPENROUTER_API_KEY
+    });
+
     // Get OpenRouter API key from environment
     const OPENROUTER_API_KEY = env.OPENROUTER_API_KEY || '';
 
     if (!OPENROUTER_API_KEY) {
-      console.error('Missing OPENROUTER_API_KEY. Context:', { hasContext: !!context, hasEnv: !!context?.env });
+      console.error('Missing OPENROUTER_API_KEY');
       return json({
-        error: 'OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable in Cloudflare Pages dashboard.'
+        error: 'OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable in Cloudflare Pages dashboard. Available env keys: ' + (context?.env ? Object.keys(context.env).join(', ') : 'none')
       }, { status: 500 });
     }
 
