@@ -12,6 +12,9 @@ interface Message {
   options?: string[];
   appUrl?: string;
   isBuilding?: boolean;
+  code?: string;
+  appName?: string;
+  spec?: any;
 }
 
 export async function action({ request, context }: ActionFunctionArgs) {
@@ -59,7 +62,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       const response = await agent.answer(message);
 
       if (response.type === 'ready' && response.spec) {
-        // Generate code and deploy
+        // Generate code
         console.log('Generating code for spec:', JSON.stringify(response.spec, null, 2));
 
         // Ensure features is an array
@@ -77,31 +80,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
           userRequest: initialMessage
         }, OPENROUTER_API_KEY);
 
-        console.log('Code generated, deploying...');
+        console.log('Code generated successfully!');
 
-        // Deploy the app
-        const userId = 'demo-user'; // TODO: Get from Clerk auth
-        const appName = response.spec.appName || 'my-app';
-
-        const deployment = await deployApp({
-          code,
-          userId,
-          appName,
-          spec: response.spec
-        }, env);
-
-        if (deployment.status === 'failed') {
-          return json({
-            type: 'error',
-            error: deployment.error || 'Deployment failed'
-          });
-        }
-
+        // Return code for preview
         return json({
-          type: 'complete',
-          appUrl: deployment.url,
-          appId: deployment.appId,
-          logs: deployment.logs
+          type: 'preview',
+          code,
+          spec: response.spec,
+          appName: response.spec.appName || 'my-app'
         });
       }
 
@@ -202,6 +188,15 @@ export default function Build() {
               options: response.options
             }]);
           }
+        } else if (fetcher.data.type === 'preview') {
+          // Show code preview
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `✅ Code generated successfully!\n\nHere's a preview of your ${fetcher.data.appName}:`,
+            code: fetcher.data.code,
+            appName: fetcher.data.appName,
+            spec: fetcher.data.spec
+          }]);
         } else if (fetcher.data.type === 'complete') {
           // Show building message first if not already shown
           if (!messages.find(m => m.isBuilding)) {
@@ -286,6 +281,24 @@ export default function Build() {
                   } text-white`}
                 >
                   <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                  {msg.code && (
+                    <div className="mt-4">
+                      <div className="bg-black/50 p-4 rounded-lg mb-4 max-h-96 overflow-y-auto">
+                        <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">{msg.code.substring(0, 500)}...</pre>
+                        <p className="text-gray-400 text-sm mt-2">({msg.code.length} characters total)</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          // TODO: Trigger deployment
+                          alert('Deployment coming soon! Code is ready.');
+                        }}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-all"
+                      >
+                        Deploy Now →
+                      </button>
+                    </div>
+                  )}
 
                   {msg.appUrl && (
                     <div className="mt-4">
