@@ -60,7 +60,17 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
       if (response.type === 'ready' && response.spec) {
         // Generate code and deploy
-        console.log('Generating code for spec:', response.spec);
+        console.log('Generating code for spec:', JSON.stringify(response.spec, null, 2));
+
+        // Ensure features is an array
+        if (response.spec.features && !Array.isArray(response.spec.features)) {
+          console.log('Converting features to array:', response.spec.features);
+          if (typeof response.spec.features === 'string') {
+            response.spec.features = [response.spec.features];
+          } else if (typeof response.spec.features === 'object') {
+            response.spec.features = Object.values(response.spec.features);
+          }
+        }
 
         const code = await generateAppCode({
           spec: response.spec,

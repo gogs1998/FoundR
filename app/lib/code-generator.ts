@@ -80,7 +80,11 @@ UI PRIORITIES:
 - Fast interactions
 
 FEATURES TO IMPLEMENT:
-${spec.features?.map((f: string) => `- ${f}`).join('\n')}
+${Array.isArray(spec.features)
+  ? spec.features.map((f: string) => `- ${f}`).join('\n')
+  : typeof spec.features === 'string'
+    ? `- ${spec.features}`
+    : '- Core functionality as described above'}
 
 CODE STRUCTURE:
 
