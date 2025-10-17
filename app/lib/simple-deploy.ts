@@ -91,15 +91,10 @@ function createDemoDeployment(request: DeployRequest): DeployResponse {
   const projectName = request.appName.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
   return {
-    url: `https://demo.foundr.app/preview/${appId}`,
-    appId,
-    status: 'deployed',
-    logs: [
-      '✓ Code generated successfully',
-      '✓ Demo deployment created',
-      '⚠️  Note: This is a demo preview. To deploy real apps, configure VibeSDK.',
-      `✓ Preview available (demo mode)`
-    ]
+    url: '',
+    appId: '',
+    status: 'failed',
+    error: 'VibeSDK not configured. To deploy real apps, you need to:\n\n1. Deploy VibeSDK Worker (see vibesdk folder)\n2. Set VIBESDK_URL environment variable in Cloudflare Pages\n3. Set VIBESDK_API_KEY if required\n\nThe code was generated successfully, but deployment requires VibeSDK to be running.'
   };
 }
 
