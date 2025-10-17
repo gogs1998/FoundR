@@ -22,67 +22,52 @@ export async function deployApp(
 ): Promise<DeployResponse> {
 
   try {
-    // Check if VibeSDK is configured
-    if (!env.VIBESDK_URL || env.VIBESDK_URL === '') {
-      console.log('⚠️  VibeSDK not configured, using demo mode');
-      return createDemoDeployment(request);
-    }
-
-    console.log('🚀 Calling real VibeSDK for deployment...');
+    console.log('🚀 Deploying app directly to Cloudflare Pages...');
     console.log('📝 App name:', request.appName);
     console.log('👤 User ID:', request.userId);
 
-    // Call the real VibeSDK backend
-    const response = await fetch(`${env.VIBESDK_URL}/build`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.VIBESDK_API_KEY || 'your-vibesdk-key'}`
-      },
-      body: JSON.stringify({
-        prompt: `Build a ${request.appName} app based on: ${JSON.stringify(request.spec)}`,
-        userId: request.userId,
-        projectName: request.appName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        config: {
-          framework: 'react',
-          buildCommand: 'npm run build',
-          outputDir: 'dist'
-        }
-      })
-    });
+    // Create HTML wrapper for the React code
+    const htmlContent = createHtmlWrapper(request.code, request.appName);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ VibeSDK deployment failed:', errorText);
+    // Deploy using Cloudflare Direct Upload
+    const projectName = `${request.appName}-${request.userId}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const deployment = await deployToCloudflarePages(
+      projectName,
+      htmlContent,
+      env.CLOUDFLARE_API_TOKEN,
+      env.CLOUDFLARE_ACCOUNT_ID
+    );
 
-      // Fall back to demo mode on error
-      console.log('⚠️  Falling back to demo mode');
-      return createDemoDeployment(request);
+    if (!deployment.success) {
+      return {
+        url: '',
+        appId: '',
+        status: 'failed',
+        error: deployment.error || 'Deployment failed'
+      };
     }
 
-    const data = await response.json();
-    console.log('✅ VibeSDK deployment successful:', data);
-
     return {
-      url: data.url || `https://${data.appId || 'unknown'}.pages.dev`,
-      appId: data.appId || generateAppId(),
+      url: deployment.url,
+      appId: deployment.deploymentId,
       status: 'deployed',
       logs: [
-        '✓ AI code generation completed',
-        '✓ Sandbox environment created',
-        '✓ Dependencies installed',
-        '✓ Application built',
-        '✓ Deployed to Cloudflare Pages',
-        `✓ Live at ${data.url || 'deployment-url'}`
+        '✓ Code generated successfully',
+        '✓ HTML wrapper created',
+        '✓ Uploaded to Cloudflare Pages',
+        '✓ Deployment complete',
+        `✓ Live at ${deployment.url}`
       ]
     };
 
   } catch (error) {
     console.error('❌ Deployment error:', error);
-
-    // Fall back to demo mode on error
-    console.log('⚠️  Falling back to demo mode');
-    return createDemoDeployment(request);
+    return {
+      url: '',
+      appId: '',
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown deployment error'
+    };
   }
 }
 
@@ -130,6 +115,115 @@ export async function updateApp(
       appId: '',
       status: 'failed',
       error: error.message
+    };
+  }
+}
+
+function createHtmlWrapper(reactCode: string, appName: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${appName}</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    ${reactCode}
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>`;
+}
+
+async function deployToCloudflarePages(
+  projectName: string,
+  htmlContent: string,
+  apiToken: string,
+  accountId: string
+): Promise<{ success: boolean; url?: string; deploymentId?: string; error?: string }> {
+
+  if (!apiToken || !accountId) {
+    return {
+      success: false,
+      error: 'Cloudflare API Token and Account ID are required. Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in environment variables.'
+    };
+  }
+
+  try {
+    // Create or get project
+    const projectResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: projectName,
+          production_branch: 'main'
+        })
+      }
+    );
+
+    const projectData = await projectResponse.json();
+
+    // If project already exists, that's fine
+    if (!projectResponse.ok && projectData.errors?.[0]?.code !== 8000007) {
+      return {
+        success: false,
+        error: `Failed to create project: ${JSON.stringify(projectData.errors)}`
+      };
+    }
+
+    // Direct upload deployment
+    const formData = new FormData();
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    formData.append('index.html', blob, 'index.html');
+
+    const uploadResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`
+        },
+        body: formData
+      }
+    );
+
+    const uploadData = await uploadResponse.json();
+
+    if (!uploadResponse.ok) {
+      return {
+        success: false,
+        error: `Deployment failed: ${JSON.stringify(uploadData.errors)}`
+      };
+    }
+
+    return {
+      success: true,
+      url: uploadData.result?.url || `https://${projectName}.pages.dev`,
+      deploymentId: uploadData.result?.id || generateAppId()
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
