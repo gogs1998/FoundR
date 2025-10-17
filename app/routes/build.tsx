@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { json, type ActionFunctionArgs } from '@remix-run/cloudflare';
 import { useFetcher } from '@remix-run/react';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
@@ -125,6 +125,7 @@ export default function Build() {
 
   const fetcher = useFetcher<any>();
   const isLoading = fetcher.state !== 'idle';
+  const lastProcessedData = useRef<any>(null);
 
   const handleStart = async () => {
     if (!inputValue.trim()) return;
@@ -162,74 +163,74 @@ export default function Build() {
     fetcher.submit(formData, { method: 'POST' });
   };
 
-  // Handle fetcher responses
-  if (fetcher.data && fetcher.state === 'idle') {
-    try {
-      if (fetcher.data.error) {
-        // Show error message
-        if (messages[messages.length - 1]?.role !== 'error') {
-          setMessages([...messages, {
-            role: 'assistant',
-            content: `❌ Error: ${fetcher.data.error}`
-          }]);
-        }
-      } else if (fetcher.data.type === 'question') {
-        const response = fetcher.data.response as QuestionResponse;
-        setConversation(fetcher.data.conversation);
-        if (fetcher.data.initialMessage) {
-          setInitialMessage(fetcher.data.initialMessage);
-        }
+  // Handle fetcher responses in useEffect
+  useEffect(() => {
+    if (fetcher.data && fetcher.state === 'idle' && fetcher.data !== lastProcessedData.current) {
+      lastProcessedData.current = fetcher.data;
 
-        // Add AI question
-        if (messages[messages.length - 1]?.content !== response.question) {
-          setMessages([...messages, {
-            role: 'assistant',
-            content: response.question || 'Let me ask you a question...',
-            options: response.options
-          }]);
-        }
-      } else if (fetcher.data.type === 'complete') {
-        // Show building message first if not already shown
-        if (!messages.find(m => m.isBuilding)) {
-          setTimeout(() => {
-            setMessages([...messages, {
+      try {
+        if (fetcher.data.error) {
+          // Show error message
+          if (messages[messages.length - 1]?.role !== 'error') {
+            setMessages(prev => [...prev, {
               role: 'assistant',
-              content: '🎉 Your app is being built! This will take about 2 minutes...',
-              isBuilding: true
+              content: `❌ Error: ${fetcher.data.error}`
             }]);
+          }
+        } else if (fetcher.data.type === 'question') {
+          const response = fetcher.data.response as QuestionResponse;
+          setConversation(fetcher.data.conversation);
+          if (fetcher.data.initialMessage) {
+            setInitialMessage(fetcher.data.initialMessage);
+          }
 
-            // Show completion after a moment
+          // Add AI question
+          if (messages[messages.length - 1]?.content !== response.question) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: response.question || 'Let me ask you a question...',
+              options: response.options
+            }]);
+          }
+        } else if (fetcher.data.type === 'complete') {
+          // Show building message first if not already shown
+          if (!messages.find(m => m.isBuilding)) {
             setTimeout(() => {
-              setMessages([...messages, {
+              setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: '🎉 Your app is being built! This will take about 2 minutes...',
                 isBuilding: true
-              }, {
-                role: 'assistant',
-                content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
-                appUrl: fetcher.data.appUrl
               }]);
-            }, 2000);
-          }, 100);
-        } else if (!messages.find(m => m.appUrl)) {
-          // Add completion message
-          setMessages([...messages, {
+
+              // Show completion after a moment
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  role: 'assistant',
+                  content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
+                  appUrl: fetcher.data.appUrl
+                }]);
+              }, 2000);
+            }, 100);
+          } else if (!messages.find(m => m.appUrl)) {
+            // Add completion message
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
+              appUrl: fetcher.data.appUrl
+            }]);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling fetcher data:', error);
+        if (messages[messages.length - 1]?.role !== 'error') {
+          setMessages(prev => [...prev, {
             role: 'assistant',
-            content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
-            appUrl: fetcher.data.appUrl
+            content: `❌ Error handling response: ${error instanceof Error ? error.message : 'Unknown error'}`
           }]);
         }
       }
-    } catch (error) {
-      console.error('Error handling fetcher data:', error);
-      if (messages[messages.length - 1]?.role !== 'error') {
-        setMessages([...messages, {
-          role: 'assistant',
-          content: `❌ Error handling response: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }]);
-      }
     }
-  }
+  }, [fetcher.data, fetcher.state, messages]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-slate-900 to-black">
