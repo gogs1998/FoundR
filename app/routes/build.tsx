@@ -174,50 +174,51 @@ export default function Build() {
           }]);
         }
       } else if (fetcher.data.type === 'question') {
-      const response = fetcher.data.response as QuestionResponse;
-      setConversation(fetcher.data.conversation);
-      if (fetcher.data.initialMessage) {
-        setInitialMessage(fetcher.data.initialMessage);
-      }
+        const response = fetcher.data.response as QuestionResponse;
+        setConversation(fetcher.data.conversation);
+        if (fetcher.data.initialMessage) {
+          setInitialMessage(fetcher.data.initialMessage);
+        }
 
-      // Add AI question
-      if (messages[messages.length - 1]?.content !== response.question) {
-        setMessages([...messages, {
-          role: 'assistant',
-          content: response.question || 'Let me ask you a question...',
-          options: response.options
-        }]);
-      }
-    } else if (fetcher.data.type === 'complete') {
-      // Show building message first if not already shown
-      if (!messages.find(m => m.isBuilding)) {
-        setTimeout(() => {
+        // Add AI question
+        if (messages[messages.length - 1]?.content !== response.question) {
           setMessages([...messages, {
             role: 'assistant',
-            content: '🎉 Your app is being built! This will take about 2 minutes...',
-            isBuilding: true
+            content: response.question || 'Let me ask you a question...',
+            options: response.options
           }]);
-
-          // Show completion after a moment
+        }
+      } else if (fetcher.data.type === 'complete') {
+        // Show building message first if not already shown
+        if (!messages.find(m => m.isBuilding)) {
           setTimeout(() => {
             setMessages([...messages, {
               role: 'assistant',
               content: '🎉 Your app is being built! This will take about 2 minutes...',
               isBuilding: true
-            }, {
-              role: 'assistant',
-              content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
-              appUrl: fetcher.data.appUrl
             }]);
-          }, 2000);
-        }, 100);
-      } else if (!messages.find(m => m.appUrl)) {
-        // Add completion message
-        setMessages([...messages, {
-          role: 'assistant',
-          content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
-          appUrl: fetcher.data.appUrl
-        }]);
+
+            // Show completion after a moment
+            setTimeout(() => {
+              setMessages([...messages, {
+                role: 'assistant',
+                content: '🎉 Your app is being built! This will take about 2 minutes...',
+                isBuilding: true
+              }, {
+                role: 'assistant',
+                content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
+                appUrl: fetcher.data.appUrl
+              }]);
+            }, 2000);
+          }, 100);
+        } else if (!messages.find(m => m.appUrl)) {
+          // Add completion message
+          setMessages([...messages, {
+            role: 'assistant',
+            content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
+            appUrl: fetcher.data.appUrl
+          }]);
+        }
       }
     } catch (error) {
       console.error('Error handling fetcher data:', error);
