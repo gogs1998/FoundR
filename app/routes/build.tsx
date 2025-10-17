@@ -164,15 +164,16 @@ export default function Build() {
 
   // Handle fetcher responses
   if (fetcher.data && fetcher.state === 'idle') {
-    if (fetcher.data.error) {
-      // Show error message
-      if (messages[messages.length - 1]?.role !== 'error') {
-        setMessages([...messages, {
-          role: 'assistant',
-          content: `❌ Error: ${fetcher.data.error}`
-        }]);
-      }
-    } else if (fetcher.data.type === 'question') {
+    try {
+      if (fetcher.data.error) {
+        // Show error message
+        if (messages[messages.length - 1]?.role !== 'error') {
+          setMessages([...messages, {
+            role: 'assistant',
+            content: `❌ Error: ${fetcher.data.error}`
+          }]);
+        }
+      } else if (fetcher.data.type === 'question') {
       const response = fetcher.data.response as QuestionResponse;
       setConversation(fetcher.data.conversation);
       if (fetcher.data.initialMessage) {
@@ -216,6 +217,14 @@ export default function Build() {
           role: 'assistant',
           content: `🎉 Your app is live!\n\n${fetcher.data.appUrl}\n\nTry it out! You can make changes by telling me what to adjust.`,
           appUrl: fetcher.data.appUrl
+        }]);
+      }
+    } catch (error) {
+      console.error('Error handling fetcher data:', error);
+      if (messages[messages.length - 1]?.role !== 'error') {
+        setMessages([...messages, {
+          role: 'assistant',
+          content: `❌ Error handling response: ${error instanceof Error ? error.message : 'Unknown error'}`
         }]);
       }
     }
