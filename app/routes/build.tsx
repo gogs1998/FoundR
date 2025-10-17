@@ -290,13 +290,14 @@ export default function Build() {
                     </div>
                   )}
 
-                  {msg.options && !isLoading && (
+                  {msg.options && (
                     <div className="mt-4 grid gap-2">
                       {msg.options.map((option, j) => (
                         <button
                           key={j}
                           onClick={() => handleAnswer(option)}
-                          className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-left transition-all hover:scale-102"
+                          disabled={isLoading}
+                          className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-left transition-all hover:scale-102 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {option}
                           <ArrowRight className="inline ml-2" size={16} />
@@ -338,19 +339,43 @@ export default function Build() {
             </button>
           </div>
         ) : (
-          <div className="text-center">
-            <p className="text-gray-400 mb-4">Choose an option above or describe what you want to change</p>
-            <button
-              onClick={() => {
-                setMessages([]);
-                setConversation(null);
-                setInitialMessage('');
-              }}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-all"
-              disabled={isLoading}
-            >
-              Start Over
-            </button>
+          <div>
+            <div className="flex gap-3 mb-4">
+              <input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !isLoading && inputValue.trim() && handleAnswer(inputValue) && setInputValue('')}
+                placeholder="Type your answer or choose an option above..."
+                className="flex-1 px-6 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                disabled={isLoading}
+              />
+              <button
+                onClick={() => {
+                  if (inputValue.trim()) {
+                    handleAnswer(inputValue);
+                    setInputValue('');
+                  }
+                }}
+                disabled={isLoading || !inputValue.trim()}
+                className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-xl text-white font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                Send
+              </button>
+            </div>
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setMessages([]);
+                  setConversation(null);
+                  setInitialMessage('');
+                  setInputValue('');
+                }}
+                className="px-6 py-2 bg-slate-700/50 hover:bg-slate-600 rounded-lg text-white text-sm transition-all"
+                disabled={isLoading}
+              >
+                Start Over
+              </button>
+            </div>
           </div>
         )}
 
