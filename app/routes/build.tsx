@@ -81,6 +81,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }, OPENROUTER_API_KEY);
 
         console.log('Code generated successfully!');
+        console.log('Code length:', code?.length);
+        console.log('Code preview:', code?.substring(0, 100));
+
+        if (!code || code.length === 0) {
+          return json({
+            type: 'error',
+            error: 'Code generation returned empty result'
+          });
+        }
 
         // Return code for preview
         return json({
@@ -190,13 +199,26 @@ export default function Build() {
           }
         } else if (fetcher.data.type === 'preview') {
           // Show code preview
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: `✅ Code generated successfully!\n\nHere's a preview of your ${fetcher.data.appName}:`,
-            code: fetcher.data.code,
-            appName: fetcher.data.appName,
-            spec: fetcher.data.spec
-          }]);
+          console.log('Preview data received:', {
+            hasCode: !!fetcher.data.code,
+            codeLength: fetcher.data.code?.length,
+            appName: fetcher.data.appName
+          });
+
+          if (!fetcher.data.code) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: '❌ Error: No code was generated. Please check the console for errors.'
+            }]);
+          } else {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `✅ Code generated successfully!\n\nHere's a preview of your ${fetcher.data.appName}:`,
+              code: fetcher.data.code,
+              appName: fetcher.data.appName,
+              spec: fetcher.data.spec
+            }]);
+          }
         } else if (fetcher.data.type === 'complete') {
           // Show building message first if not already shown
           if (!messages.find(m => m.isBuilding)) {
