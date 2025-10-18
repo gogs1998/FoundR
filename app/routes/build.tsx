@@ -284,18 +284,95 @@ export default function Build() {
 
                   {msg.code && (
                     <div className="mt-4">
-                      <div className="bg-black/50 p-4 rounded-lg mb-4 max-h-96 overflow-y-auto">
-                        <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">{msg.code.substring(0, 500)}...</pre>
-                        <p className="text-gray-400 text-sm mt-2">({msg.code.length} characters total)</p>
+                      {/* Live Preview */}
+                      <div className="bg-white rounded-lg mb-4 border-4 border-gray-700">
+                        <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
+                          <span className="text-white text-sm font-semibold">Live Preview</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const iframe = document.getElementById(`preview-${i}`) as HTMLIFrameElement;
+                                if (iframe?.contentWindow) {
+                                  iframe.contentWindow.location.reload();
+                                }
+                              }}
+                              className="text-gray-400 hover:text-white text-xs px-2 py-1 hover:bg-gray-700 rounded"
+                            >
+                              Refresh
+                            </button>
+                            <button
+                              onClick={() => {
+                                const modal = document.getElementById(`code-${i}`);
+                                if (modal) modal.classList.toggle('hidden');
+                              }}
+                              className="text-gray-400 hover:text-white text-xs px-2 py-1 hover:bg-gray-700 rounded"
+                            >
+                              View Code
+                            </button>
+                          </div>
+                        </div>
+                        <iframe
+                          id={`preview-${i}`}
+                          srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${msg.appName || 'Preview'}</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    ${msg.code}
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>`}
+                          className="w-full h-[600px] bg-white"
+                          sandbox="allow-scripts allow-same-origin"
+                        />
                       </div>
+
+                      {/* Code Modal */}
+                      <div id={`code-${i}`} className="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8">
+                        <div className="bg-gray-900 rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+                          <div className="bg-gray-800 px-6 py-4 flex items-center justify-between">
+                            <h3 className="text-white font-semibold">Generated Code</h3>
+                            <button
+                              onClick={() => {
+                                const modal = document.getElementById(`code-${i}`);
+                                if (modal) modal.classList.add('hidden');
+                              }}
+                              className="text-gray-400 hover:text-white"
+                            >
+                              ✕ Close
+                            </button>
+                          </div>
+                          <div className="p-6 overflow-y-auto flex-1">
+                            <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap">{msg.code}</pre>
+                          </div>
+                        </div>
+                      </div>
+
                       <button
                         onClick={() => {
                           // TODO: Trigger deployment
-                          alert('Deployment coming soon! Code is ready.');
+                          alert('Deployment coming soon! Preview is working.');
                         }}
                         className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-all"
                       >
-                        Deploy Now →
+                        Deploy to Production →
                       </button>
                     </div>
                   )}
